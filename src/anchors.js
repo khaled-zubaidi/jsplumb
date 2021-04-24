@@ -1,7 +1,7 @@
 /*
  * This file contains the code for creating and manipulating anchors.
  *
- * Copyright (c) 2010 - 2018 jsPlumb (hello@jsplumbtoolkit.com)
+ * Copyright (c) 2010 - 2020 jsPlumb (hello@jsplumbtoolkit.com)
  *
  * https://jsplumbtoolkit.com
  * https://github.com/jsplumb/jsplumb
@@ -30,7 +30,7 @@
             jsPlumbInstance = params.jsPlumbInstance,
             floatingConnections = {},
             // used by placeAnchors function
-            placeAnchorsOnLine = function (desc, elementDimensions, elementPosition, connections, horizontal, otherMultiplier, reverse) {
+            placeAnchorsOnLine = function (desc, elementDimensions, elementPosition, connections, horizontal, otherMultiplier, reverse, rotation) {
                 var a = [], step = elementDimensions[horizontal ? 0 : 1] / (connections.length + 1);
 
                 for (var i = 0; i < connections.length; i++) {
@@ -39,8 +39,14 @@
                         val = elementDimensions[horizontal ? 0 : 1] - val;
                     }
 
-                    var dx = (horizontal ? val : other), x = elementPosition[0] + dx, xp = dx / elementDimensions[0],
-                        dy = (horizontal ? other : val), y = elementPosition[1] + dy, yp = dy / elementDimensions[1];
+                    var dx = (horizontal ? val : other), x = elementPosition.left + dx, xp = dx / elementDimensions[0],
+                        dy = (horizontal ? other : val), y = elementPosition.top + dy, yp = dy / elementDimensions[1];
+
+                    if (rotation !== 0) {
+                        var rotated = jsPlumbUtil.rotatePoint([x, y], [elementPosition.centerx, elementPosition.centery], rotation);
+                        x = rotated[0];
+                        y = rotated[1];
+                    }
 
                     a.push([ x, y, xp, yp, connections[i][1], connections[i][2] ]);
                 }
@@ -75,9 +81,10 @@
                         if (unsortedConnections.length > 0) {
                             var sc = _sortHelper(unsortedConnections, edgeSortFunctions[desc]), // puts them in order based on the target element's pos on screen
                                 reverse = desc === "right" || desc === "top",
+                                rotation = jsPlumbInstance.getRotation(elementId),
                                 anchors = placeAnchorsOnLine(desc, elementDimensions,
                                     elementPosition, sc,
-                                    isHorizontal, otherMultiplier, reverse);
+                                    isHorizontal, otherMultiplier, reverse, rotation);
 
                             // takes a computed anchor position and adjusts it for parent offset and scroll, then stores it.
                             var _setAnchorLocation = function (endpoint, anchorPos) {
@@ -97,10 +104,10 @@
                         }
                     };
 
-                placeSomeAnchors("bottom", sS, [sO.left, sO.top], _anchorLists.bottom, true, 1, [0, 1]);
-                placeSomeAnchors("top", sS, [sO.left, sO.top], _anchorLists.top, true, 0, [0, -1]);
-                placeSomeAnchors("left", sS, [sO.left, sO.top], _anchorLists.left, false, 0, [-1, 0]);
-                placeSomeAnchors("right", sS, [sO.left, sO.top], _anchorLists.right, false, 1, [1, 0]);
+                placeSomeAnchors("bottom", sS, sO, _anchorLists.bottom, true, 1, [0, 1]);
+                placeSomeAnchors("top", sS, sO, _anchorLists.top, true, 0, [0, -1]);
+                placeSomeAnchors("left", sS, sO, _anchorLists.left, false, 0, [-1, 0]);
+                placeSomeAnchors("right", sS, sO, _anchorLists.right, false, 1, [1, 0]);
             };
 
         this.reset = function () {
@@ -110,9 +117,6 @@
         };
         this.addFloatingConnection = function (key, conn) {
             floatingConnections[key] = conn;
-        };
-        this.removeFloatingConnection = function (key) {
-            delete floatingConnections[key];
         };
         this.newConnection = function (conn) {
             var sourceId = conn.sourceId, targetId = conn.targetId,
@@ -174,7 +178,7 @@
                 }
             }
         };
-        this.add = function (endpoint, elementId) {
+        this.addEndpoint = function (endpoint, elementId) {
             _ju.addToList(_amEndpoints, elementId, endpoint);
         };
         this.changeId = function (oldId, newId) {
@@ -195,7 +199,8 @@
             });
             removeEndpointFromAnchorLists(endpoint);
         };
-        this.clearFor = function (elementId) {
+        this.elementRemoved = function (elementId) {
+            delete floatingConnections[elementId];
             delete _amEndpoints[elementId];
             _amEndpoints[elementId] = [];
         };
@@ -273,76 +278,79 @@
         };
 
         //
-        // find the entry in an endpoint's list for this connection and update its target endpoint
-        // with the current target in the connection.
-        // This method and sourceChanged need to be folder into one.
+        // Notification that the connection given has changed source/target from the originalId to the newId.
         //
-        this.updateOtherEndpoint = function (sourceElId, oldTargetId, newTargetId, connection) {
-            var sIndex = _ju.findWithFunction(connectionsByElementId[sourceElId], function (i) {
-                    return i[0].id === connection.id;
-                }),
-                tIndex = _ju.findWithFunction(connectionsByElementId[oldTargetId], function (i) {
-                    return i[0].id === connection.id;
-                });
-
-            // update or add data for source
-            if (sIndex !== -1) {
-                connectionsByElementId[sourceElId][sIndex][0] = connection;
-                connectionsByElementId[sourceElId][sIndex][1] = connection.endpoints[1];
-                connectionsByElementId[sourceElId][sIndex][2] = connection.endpoints[1].anchor.constructor === _jp.DynamicAnchor;
-            }
-
-            // remove entry for previous target (if there)
-            if (tIndex > -1) {
-                connectionsByElementId[oldTargetId].splice(tIndex, 1);
-                // add entry for new target
-                _ju.addToList(connectionsByElementId, newTargetId, [connection, connection.endpoints[0], connection.endpoints[0].anchor.constructor === _jp.DynamicAnchor]);
-            }
-
-            connection.updateConnectedClass();
-        };
-
-        //
-        // notification that the connection given has changed source from the originalId to the newId.
-        // This involves:
+        // For a change of source this involves:
         // 1. removing the connection from the list of connections stored for the originalId
         // 2. updating the source information for the target of the connection
         // 3. re-registering the connection in connectionsByElementId with the newId
         //
-        this.sourceChanged = function (originalId, newId, connection, newElement) {
-            if (originalId !== newId) {
+        // For a change of target this means find the entry in an endpoint's list for this connection and update its target endpoint
+        // with the current target in the connection.
+        //
+        this.sourceOrTargetChanged = function (originalId, newId, connection, newElement, anchorIndex) {
+            if (anchorIndex === 0) {
+                if (originalId !== newId) {
 
-                connection.sourceId = newId;
-                connection.source = newElement;
+                    connection.sourceId = newId;
+                    connection.source = newElement;
 
-                // remove the entry that points from the old source to the target
-                _ju.removeWithFunction(connectionsByElementId[originalId], function (info) {
-                    return info[0].id === connection.id;
-                });
-                // find entry for target and update it
-                var tIdx = _ju.findWithFunction(connectionsByElementId[connection.targetId], function (i) {
-                    return i[0].id === connection.id;
-                });
-                if (tIdx > -1) {
-                    connectionsByElementId[connection.targetId][tIdx][0] = connection;
-                    connectionsByElementId[connection.targetId][tIdx][1] = connection.endpoints[0];
-                    connectionsByElementId[connection.targetId][tIdx][2] = connection.endpoints[0].anchor.constructor === _jp.DynamicAnchor;
-                }
-                // add entry for new source
-                _ju.addToList(connectionsByElementId, newId, [connection, connection.endpoints[1], connection.endpoints[1].anchor.constructor === _jp.DynamicAnchor]);
-
-                // TODO SP not final on this yet. when a user drags an existing connection and it turns into a self
-                // loop, then this code hides the target endpoint (by removing it from the DOM) But I think this should
-                // occur only if the anchor is Continuous
-                if (connection.endpoints[1].anchor.isContinuous) {
-                    if (connection.source === connection.target) {
-                        connection._jsPlumb.instance.removeElement(connection.endpoints[1].canvas);
+                    // remove the entry that points from the old source to the target
+                    _ju.removeWithFunction(connectionsByElementId[originalId], function (info) {
+                        return info[0].id === connection.id;
+                    });
+                    // find entry for target and update it
+                    var tIdx = _ju.findWithFunction(connectionsByElementId[connection.targetId], function (i) {
+                        return i[0].id === connection.id;
+                    });
+                    if (tIdx > -1) {
+                        connectionsByElementId[connection.targetId][tIdx][0] = connection;
+                        connectionsByElementId[connection.targetId][tIdx][1] = connection.endpoints[0];
+                        connectionsByElementId[connection.targetId][tIdx][2] = connection.endpoints[0].anchor.constructor === _jp.DynamicAnchor;
                     }
-                    else {
-                        if (connection.endpoints[1].canvas.parentNode == null) {
-                            connection._jsPlumb.instance.appendElement(connection.endpoints[1].canvas);
+                    // add entry for new source
+                    _ju.addToList(connectionsByElementId, newId, [connection, connection.endpoints[1], connection.endpoints[1].anchor.constructor === _jp.DynamicAnchor]);
+
+                    // TODO SP not final on this yet. when a user drags an existing connection and it turns into a self
+                    // loop, then this code hides the target endpoint (by removing it from the DOM) But I think this should
+                    // occur only if the anchor is Continuous
+                    if (connection.endpoints[1].anchor.isContinuous) {
+                        if (connection.source === connection.target) {
+                            connection._jsPlumb.instance.removeElement(connection.endpoints[1].canvas);
+                        } else {
+                            if (connection.endpoints[1].canvas.parentNode == null) {
+                                connection._jsPlumb.instance.appendElement(connection.endpoints[1].canvas);
+                            }
                         }
                     }
+
+                    connection.updateConnectedClass();
+                }
+            } else if (anchorIndex === 1) {
+                var sourceElId = connection.endpoints[0].elementId;
+
+                connection.target = newElement;
+                connection.targetId = newId;
+
+                var sIndex = _ju.findWithFunction(connectionsByElementId[sourceElId], function (i) {
+                        return i[0].id === connection.id;
+                    }),
+                    tIndex = _ju.findWithFunction(connectionsByElementId[originalId], function (i) {
+                        return i[0].id === connection.id;
+                    });
+
+                // update or add data for source
+                if (sIndex !== -1) {
+                    connectionsByElementId[sourceElId][sIndex][0] = connection;
+                    connectionsByElementId[sourceElId][sIndex][1] = connection.endpoints[1];
+                    connectionsByElementId[sourceElId][sIndex][2] = connection.endpoints[1].anchor.constructor === _jp.DynamicAnchor;
+                }
+
+                // remove entry for previous target (if there)
+                if (tIndex > -1) {
+                    connectionsByElementId[originalId].splice(tIndex, 1);
+                    // add entry for new target
+                    _ju.addToList(connectionsByElementId, newId, [connection, connection.endpoints[0], connection.endpoints[0].anchor.constructor === _jp.DynamicAnchor]);
                 }
 
                 connection.updateConnectedClass();
@@ -372,27 +380,26 @@
 
             for (var i = 0; i < ep.connections.length; i++) {
                 if (ep.connections[i].sourceId === currentId) {
-                    self.sourceChanged(currentId, ep.elementId, ep.connections[i], ep.element);
+                    self.sourceOrTargetChanged(currentId, ep.elementId, ep.connections[i], ep.element, 0);
                 }
                 else if (ep.connections[i].targetId === currentId) {
-                    ep.connections[i].targetId = ep.elementId;
-                    ep.connections[i].target = ep.element;
-                    self.updateOtherEndpoint(ep.connections[i].sourceId, currentId, ep.elementId, ep.connections[i]);
+                    self.sourceOrTargetChanged(currentId, ep.elementId, ep.connections[i], ep.element, 1);
                 }
             }
         };
 
         this.redraw = function (elementId, ui, timestamp, offsetToUI, clearEdits, doNotRecalcEndpoint) {
 
+            var connectionsToPaint = [],
+                endpointsToPaint = [],
+                anchorsToUpdate = [];
+
             if (!jsPlumbInstance.isSuspendDrawing()) {
                 // get all the endpoints for this element
                 var ep = _amEndpoints[elementId] || [],
-                    endpointConnections = connectionsByElementId[elementId] || [],
-                    connectionsToPaint = [],
-                    endpointsToPaint = [],
-                    anchorsToUpdate = [];
+                    endpointConnections = connectionsByElementId[elementId] || [];
 
-                timestamp = timestamp || jsPlumbInstance.timestamp();
+                timestamp = timestamp || jsPlumbUtil.uuid();
                 // offsetToUI are values that would have been calculated in the dragManager when registering
                 // an endpoint for an element that had a parent (somewhere in the hierarchy) that had been
                 // registered as draggable.
@@ -422,7 +429,9 @@
                     if (sourceContinuous || targetContinuous) {
                         var oKey = sourceId + "_" + targetId,
                             o = orientationCache[oKey],
-                            oIdx = conn.sourceId === elementId ? 1 : 0;
+                            oIdx = conn.sourceId === elementId ? 1 : 0,
+                            targetRotation = jsPlumbInstance.getRotation(targetId),
+                            sourceRotation = jsPlumbInstance.getRotation(sourceId);
 
                         if (sourceContinuous && !anchorLists[sourceId]) {
                             anchorLists[sourceId] = { top: [], right: [], bottom: [], left: [] };
@@ -451,7 +460,7 @@
                         }
                         else {
                             if (!o) {
-                                o = this.calculateOrientation(sourceId, targetId, sd.o, td.o, conn.endpoints[0].anchor, conn.endpoints[1].anchor, conn);
+                                o = this.calculateOrientation(sourceId, targetId, sd.o, td.o, conn.endpoints[0].anchor, conn.endpoints[1].anchor, conn, sourceRotation, targetRotation);
                                 orientationCache[oKey] = o;
                                 // this would be a performance enhancement, but the computed angles need to be clamped to
                                 //the (-PI/2 -> PI/2) range in order for the sorting to work properly.
@@ -559,6 +568,11 @@
                     connectionsToPaint[i].paint({elId: elementId, timestamp: null, recalc: false, clearEdits: clearEdits});
                 }
             }
+
+            return {
+                c:connectionsToPaint,
+                e:endpointsToPaint
+            };
         };
 
         var ContinuousAnchor = function (anchorParams) {
@@ -679,7 +693,15 @@
         };
     };
 
-    _jp.AnchorManager.prototype.calculateOrientation = function (sourceId, targetId, sd, td, sourceAnchor, targetAnchor) {
+    _jp.AnchorManager.prototype.calculateOrientation = function (sourceId,
+                                                                 targetId,
+                                                                 sd,
+                                                                 td,
+                                                                 sourceAnchor,
+                                                                 targetAnchor,
+                                                                 connection,
+                                                                 sourceRotation,
+                                                                 targetRotation) {
 
         var Orientation = { HORIZONTAL: "horizontal", VERTICAL: "vertical", DIAGONAL: "diagonal", IDENTITY: "identity" },
             axes = ["left", "top", "right", "bottom"];
@@ -691,6 +713,8 @@
             };
         }
 
+        // since we only support rotation around the center of an element these two lines don't have to take rotation
+        // into account.
         var theta = Math.atan2((td.centery - sd.centery), (td.centerx - sd.centerx)),
             theta2 = Math.atan2((sd.centery - td.centery), (sd.centerx - td.centerx));
 
@@ -700,16 +724,22 @@
         // source/target faces. sort this array by distance between midpoints. the entry at index 0 is our preferred option. we can
         // go through the array one by one until we find an entry in which each requested face is supported.
         var candidates = [], midpoints = { };
+
         (function (types, dim) {
             for (var i = 0; i < types.length; i++) {
                 midpoints[types[i]] = {
-                    "left": [ dim[i].left, dim[i].centery ],
-                    "right": [ dim[i].right, dim[i].centery ],
-                    "top": [ dim[i].centerx, dim[i].top ],
-                    "bottom": [ dim[i].centerx , dim[i].bottom]
+                    "left": [ dim[i][0].left, dim[i][0].centery ],
+                    "right": [ dim[i][0].right, dim[i][0].centery ],
+                    "top": [ dim[i][0].centerx, dim[i][0].top ],
+                    "bottom": [ dim[i][0].centerx , dim[i][0].bottom]
                 };
+                if (dim[i][1] !== 0) {
+                    for (var axis in midpoints[types[i]]) {
+                        midpoints[types[i]][axis] = jsPlumbUtil.rotatePoint(midpoints[types[i]][axis], [dim[i][0].centerx, dim[i][0].centery], dim[i][1]);
+                    }
+                }
             }
-        })([ "source", "target" ], [ sd, td ]);
+        })([ "source", "target" ], [ [sd, sourceRotation], [td, targetRotation] ]);
 
         for (var sf = 0; sf < axes.length; sf++) {
             for (var tf = 0; tf < axes.length; tf++) {
@@ -730,14 +760,20 @@
         var sourceEdge = candidates[0].source, targetEdge = candidates[0].target;
         for (var i = 0; i < candidates.length; i++) {
 
-            if (!sourceAnchor.isContinuous || sourceAnchor.isEdgeSupported(candidates[i].source)) {
+            if (sourceAnchor.isContinuous && sourceAnchor.locked) {
+                sourceEdge = sourceAnchor.getCurrentFace();
+            }
+            else if (!sourceAnchor.isContinuous || sourceAnchor.isEdgeSupported(candidates[i].source)) {
                 sourceEdge = candidates[i].source;
             }
             else {
                 sourceEdge = null;
             }
 
-            if (!targetAnchor.isContinuous || targetAnchor.isEdgeSupported(candidates[i].target)) {
+            if (targetAnchor.isContinuous && targetAnchor.locked) {
+                targetEdge = targetAnchor.getCurrentFace();
+            }
+            else if (!targetAnchor.isContinuous || targetAnchor.isEdgeSupported(candidates[i].target)) {
                 targetEdge = candidates[i].target;
             }
             else {
@@ -777,22 +813,20 @@
         this.y = params.y || 0;
         this.elementId = params.elementId;
         this.cssClass = params.cssClass || "";
-        this.userDefinedLocation = null;
         this.orientation = params.orientation || [ 0, 0 ];
         this.lastReturnValue = null;
         this.offsets = params.offsets || [ 0, 0 ];
         this.timestamp = null;
 
-        var relocatable = params.relocatable !== false;
-        this.isRelocatable = function() { return relocatable; };
-        this.setRelocatable = function(_relocatable) { relocatable = _relocatable; };
-        var snapOnRelocate = params.snapOnRelocate !== false;
-        this.isSnapOnRelocate = function() { return snapOnRelocate; };
+        this._unrotatedOrientation = [
+            this.orientation[0],
+            this.orientation[1]
+        ];
 
-        var locked = false;
-        this.lock = function() { locked = true; };
-        this.unlock = function() { locked = false; };
-        this.isLocked = function() { return locked; };
+        this.relocatable = params.relocatable !== false;
+        this.snapOnRelocate = params.snapOnRelocate !== false;
+
+        this.locked = false;
 
         _ju.EventGenerator.apply(this);
 
@@ -800,19 +834,30 @@
 
             var xy = params.xy, wh = params.wh, timestamp = params.timestamp;
 
-            if (params.clearUserDefinedLocation) {
-                this.userDefinedLocation = null;
-            }
-
             if (timestamp && timestamp === this.timestamp) {
                 return this.lastReturnValue;
             }
 
-            if (this.userDefinedLocation != null) {
-                this.lastReturnValue = this.userDefinedLocation;
-            }
-            else {
-                this.lastReturnValue = [ xy[0] + (this.x * wh[0]) + this.offsets[0], xy[1] + (this.y * wh[1]) + this.offsets[1], this.x, this.y ];
+            // unrotated position
+            var candidate = [ xy[0] + (this.x * wh[0]) + this.offsets[0], xy[1] + (this.y * wh[1]) + this.offsets[1], this.x, this.y ];
+
+            // if rotation set, adjust position.
+            var rotation = params.rotation;
+            if (rotation != null && rotation !== 0) {
+
+                var c2 = jsPlumbUtil.rotatePoint(candidate, [xy[0] + (wh[0] / 2), xy[1] + (wh[1] / 2) ], rotation);
+
+                // rotate the orientation values too. for rotations that are not multiples of 90 degrees, this will result in values that are not in the set
+                // [0, -1, 1 ], and in that case the connector paint may not be perfect. need some evidence from real world usage.
+                this.orientation[0] = Math.round((this._unrotatedOrientation[0] * c2[2]) - (this._unrotatedOrientation[1] * c2[3]));
+                this.orientation[1] = Math.round((this._unrotatedOrientation[1] * c2[2]) + (this._unrotatedOrientation[0] * c2[3]));
+
+                this.lastReturnValue = [c2[0], c2[1], this.x, this.y];
+            } else {
+                // if rotation not set (or 0), ensure orientation is original value
+                this.orientation[0] = this._unrotatedOrientation[0];
+                this.orientation[1] = this._unrotatedOrientation[1];
+                this.lastReturnValue = candidate;
             }
 
             this.timestamp = timestamp;
@@ -825,7 +870,7 @@
         };
 
         this.setPosition = function(x, y, ox, oy, overrideLock) {
-            if (!locked || overrideLock) {
+            if (!this.locked || overrideLock) {
                 this.x = x;
                 this.y = y;
                 this.orientation = [ ox, oy ];
@@ -841,15 +886,6 @@
             var ao = anchor.getOrientation(),
                 o = this.getOrientation();
             return this.x === anchor.x && this.y === anchor.y && this.offsets[0] === anchor.offsets[0] && this.offsets[1] === anchor.offsets[1] && o[0] === ao[0] && o[1] === ao[1];
-        },
-        getUserDefinedLocation: function () {
-            return this.userDefinedLocation;
-        },
-        setUserDefinedLocation: function (l) {
-            this.userDefinedLocation = l;
-        },
-        clearUserDefinedLocation: function () {
-            this.userDefinedLocation = null;
         },
         getOrientation: function () {
             return this.orientation;
@@ -977,24 +1013,33 @@
             self = this,
 
             // helper method to calculate the distance between the centers of the two elements.
-            _distance = function (anchor, cx, cy, xy, wh) {
+            _distance = function (anchor, cx, cy, xy, wh, r, tr) {
                 var ax = xy[0] + (anchor.x * wh[0]), ay = xy[1] + (anchor.y * wh[1]),
                     acx = xy[0] + (wh[0] / 2), acy = xy[1] + (wh[1] / 2);
+
+                if(r != null && r !== 0) {
+                    var rotated = jsPlumbUtil.rotatePoint([ax,ay], [acx, acy], r);
+                    ax = rotated[0];
+                    ay = rotated[1];
+                }
+
                 return (Math.sqrt(Math.pow(cx - ax, 2) + Math.pow(cy - ay, 2)) +
-                Math.sqrt(Math.pow(acx - ax, 2) + Math.pow(acy - ay, 2)));
+                        Math.sqrt(Math.pow(acx - ax, 2) + Math.pow(acy - ay, 2)));
             },
             // default method uses distance between element centers.  you can provide your own method in the dynamic anchor
-            // constructor (and also to jsPlumb.makeDynamicAnchor). the arguments to it are four arrays:
+            // constructor (and also to jsPlumb.makeDynamicAnchor). the arguments to it are:
             // xy - xy loc of the anchor's element
             // wh - anchor's element's dimensions
             // txy - xy loc of the element of the other anchor in the connection
             // twh - dimensions of the element of the other anchor in the connection.
+            // r - the rotation of the anchor's element
+            // tr - the rotation of the target anchor's element. currently unused;  a placeholder for possible future refactoring.
             // anchors - the list of selectable anchors
-            _anchorSelector = params.selector || function (xy, wh, txy, twh, anchors) {
+            _anchorSelector = params.selector || function (xy, wh, txy, twh, r, tr, anchors) {
                     var cx = txy[0] + (twh[0] / 2), cy = txy[1] + (twh[1] / 2);
                     var minIdx = -1, minDist = Infinity;
                     for (var i = 0; i < anchors.length; i++) {
-                        var d = _distance(anchors[i], cx, cy, xy, wh);
+                        var d = _distance(anchors[i], cx, cy, xy, wh, r, tr);
                         if (d < minDist) {
                             minIdx = i + 0;
                             minDist = d;
@@ -1004,26 +1049,22 @@
                 };
 
         this.compute = function (params) {
-            var xy = params.xy, wh = params.wh, txy = params.txy, twh = params.twh;
+            var xy = params.xy, wh = params.wh, txy = params.txy, twh = params.twh, r = params.rotation, tr = params.tRotation;
 
             this.timestamp = params.timestamp;
-
-            var udl = self.getUserDefinedLocation();
-            if (udl != null) {
-                return udl;
-            }
 
             // if anchor is locked or an opposite element was not given, we
             // maintain our state. anchor will be locked
             // if it is the source of a drag and drop.
-            if (this.isLocked() || txy == null || twh == null) {
-                return _curAnchor.compute(params);
+            if (this.locked || txy == null || twh == null) {
+                this.lastReturnValue = _curAnchor.compute(params);
+                return this.lastReturnValue;
             }
             else {
                 params.timestamp = null; // otherwise clear this, i think. we want the anchor to compute.
             }
 
-            _curAnchor = _anchorSelector(xy, wh, txy, twh, this.anchors);
+            _curAnchor = _anchorSelector(xy, wh, txy, twh, r, tr, this.anchors);
             this.x = _curAnchor.x;
             this.y = _curAnchor.y;
 
@@ -1033,11 +1074,12 @@
 
             _lastAnchor = _curAnchor;
 
-            return _curAnchor.compute(params);
+            this.lastReturnValue = _curAnchor.compute(params);
+            return this.lastReturnValue;
         };
 
         this.getCurrentLocation = function (params) {
-            return this.getUserDefinedLocation() || (_curAnchor != null ? _curAnchor.getCurrentLocation(params) : null);
+            return _curAnchor != null ? _curAnchor.getCurrentLocation(params) : null;
         };
 
         this.getOrientation = function (_endpoint) {

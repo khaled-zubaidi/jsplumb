@@ -1,7 +1,7 @@
 /*
  * This file contains code used when jsPlumb is being rendered in a DOM.
  *
- * Copyright (c) 2010 - 2019 jsPlumb (hello@jsplumbtoolkit.com)
+ * Copyright (c) 2010 - 2020 jsPlumb (hello@jsplumbtoolkit.com)
  *
  * https://jsplumbtoolkit.com
  * https://github.com/jsplumb/jsplumb
@@ -101,6 +101,7 @@
         var elements = params.selection, uip;
 
         var _one = function (_e) {
+            var drawResult;
             if (_e[1] != null) {
                 // run the reported offset through the code that takes parent containers
                 // into account, to adjust if necessary (issue 554)
@@ -108,7 +109,7 @@
                     el:_e[2].el,
                     pos:[_e[1].left, _e[1].top]
                 }]);
-                this.draw(_e[2].el, uip);
+                drawResult = this.draw(_e[2].el, uip);
             }
 
             if (_e[0]._jsPlumbDragOptions != null) {
@@ -118,7 +119,14 @@
             this.removeClass(_e[0], "jtk-dragged");
             this.select({source: _e[2].el}).removeClass(this.elementDraggingClass + " " + this.sourceElementDraggingClass, true);
             this.select({target: _e[2].el}).removeClass(this.elementDraggingClass + " " + this.targetElementDraggingClass, true);
+
+            params.e._drawResult = params.e._drawResult || {c:[],e:[], a:[]};
+            Array.prototype.push.apply(params.e._drawResult.c, drawResult.c);
+            Array.prototype.push.apply(params.e._drawResult.e, drawResult.e);
+            Array.prototype.push.apply(params.e._drawResult.a, drawResult.a);
+
             this.getDragManager().dragEnded(_e[2].el);
+
         }.bind(this);
 
         for (var i = 0; i < elements.length; i++) {
@@ -330,7 +338,7 @@
         this.elementRemoved = function (elementId) {
             var elId = _draggablesForElements[elementId];
             if (elId) {
-                delete _delements[elId][elementId];
+                _delements[elId] && delete _delements[elId][elementId];
                 delete _draggablesForElements[elementId];
             }
         };
@@ -834,6 +842,7 @@
         },
         animationSupported:true,
         getElement: function (el) {
+
             if (el == null) {
                 return null;
             }
@@ -841,7 +850,7 @@
             // this is not my favourite thing to do, but previous versions of
             // jsplumb supported jquery selectors, and it is possible a selector
             // will be passed in here.
-            el = typeof el === "string" ? el : el.length != null && el.enctype == null ? el[0] : el;
+            el = typeof el === "string" ? el : (el.tagName == null && el.length != null && el.enctype == null) ? el[0] : el;
             return typeof el === "string" ? document.getElementById(el) : el;
         },
         removeElement: function (element) {

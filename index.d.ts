@@ -53,285 +53,374 @@ declare module jsPlumb {
 
     class jsPlumbInstance {
 
-        addEndpoint(el: ElementGroupRef, params?: EndpointOptions, referenceParams?: EndpointOptions): Endpoint | Array<Endpoint>;
+        addEndpoint(el: ElementGroupRef, params?: EndpointOptions, referenceParams?: EndpointOptions): Endpoint | Array<Endpoint>
 
-        addEndpoints(target: ElementGroupRef, endpoints: Array<EndpointOptions>, referenceParams?: EndpointOptions): Array<Endpoint>;
+        addEndpoints(target: ElementGroupRef, endpoints: Array<EndpointOptions>, referenceParams?: EndpointOptions): Array<Endpoint>
 
-        animate(el: ElementRef, properties?: Object, options?: Object): void;
+        addGroup(params: GroupOptions): Group
 
-        batch(fn: Function, doNotRepaintAfterwards?: boolean/* =false */): void;
+        addToGroup(group: Group|string, el: ElementRef, doNotFireEvent?: boolean): void
 
-        bind(event: "connection", callback: (info: ConnectionMadeEventInfo, originalEvent: Event) => void, insertAtStart?: boolean/* =false */): void;
-        bind(event: "click", callback: (info: Connection, originalEvent: Event) => void, insertAtStart?: boolean/* =false */): void;
-        bind(event: string, callback: (info: OnConnectionBindInfo, originalEvent: Event) => void, insertAtStart?: boolean/* =false */): void;
+        animate(el: ElementRef, properties?: Object, options?: Object): void
 
-        cleanupListeners(): void;
+        batch(fn: Function, doNotRepaintAfterwards?: boolean/* =false */): void
 
-        connect(params: ConnectParams, referenceParams?: Object): Connection;
+        bind(event: "connection", callback: (info: ConnectionMadeEventInfo, originalEvent: Event) => void, insertAtStart?: boolean/* =false */): void
+        bind(event: "click", callback: (info: Connection, originalEvent: Event) => void, insertAtStart?: boolean/* =false */): void
+        bind(event: string, callback: (info: OnConnectionBindInfo, originalEvent: Event) => void, insertAtStart?: boolean/* =false */): void
 
-        deleteEndpoint(object: UUID | Endpoint, doNotRepaintAfterwards?: boolean/* =false */): jsPlumbInstance;
+        cleanupListeners(): void
 
-        deleteEveryConnection(): void;
+        collapseGroup(group: Group|string): void
 
-        deleteEveryEndpoint(): jsPlumbInstance;
+        connect(params: ConnectParams, referenceParams?: Object): Connection
 
-        deleteConnection(conn: Connection): void;
+        deleteEndpoint(object: UUID | Endpoint, doNotRepaintAfterwards?: boolean/* =false */): jsPlumbInstance
 
-        doWhileSuspended(): jsPlumbInstance;
+        deleteEveryConnection(): void
 
-        draggable(el: Object, options?: DragOptions): jsPlumbInstance;
+        deleteEveryEndpoint(): jsPlumbInstance
 
-        empty(el: string | Element | Selector): void;
+        deleteConnection(conn: Connection): void
 
-        fire(event: string, value: Object, originalEvent: Event): void;
+        doWhileSuspended(): jsPlumbInstance
 
-        getAllConnections(): Array<Connection>;
+        draggable(el: Object, options?: DragOptions): jsPlumbInstance
 
-        getConnections(scope: string, options: Object, scope2?: string | string, source?: string | string | Selector, target?: string | string | Selector, flat?: boolean/* =false */): Array<any> | Map<any, any>;
+        empty(el: string | Element | Selector): void
 
-        getContainer(): Element;
+        expandGroup(group: Group|string, doNotFireEvent?: boolean): void
 
-        getDefaultScope(): string;
+        fire(event: string, value: Object, originalEvent: Event): void
 
-        getEndpoint(uuid: string): Endpoint;
+        getAllConnections(): Array<Connection>
 
-        getEndpoints(element:string|Element):Array<Endpoint>;
+        getConnections(scope: string, options: Object, scope2?: string | string, source?: string | string | Selector, target?: string | string | Selector, flat?: boolean/* =false */): Array<any> | Record<any, any>
 
-        getScope(Element: Element | string): string;
+        getContainer(): Element
 
-        getSelector(context?: Element | Selector, spec?: string): void;
+        getDefaultScope(): string
 
-        getSourceScope(element: Element | string): string;
+        getEndpoint(uuid: string): Endpoint
 
-        getTargetScope(element: Element | string): string;
+        getEndpoints(element:string|Element):Array<Endpoint>
 
-        getType(id: string, typeDescriptor: string): Object;
+        getGroup(groupId: Group|string): Group
 
-        getZoom(): number;
+        getGroups(): Array<Group>
 
-        hide(el: string | Element | Selector, changeEndpoints?: boolean/* =false */): jsPlumbInstance;
+        /**
+         * Gets the current rotation, if any, for the element with the given id. If no specific rotation has been applied this method will return 0, never null or undefined.
+         * @param elementId ID of the element to retrieve rotation for.
+         * @returns The element's current rotation, 0 if no rotation applied.
+         */
+        getRotation(elementId:string):number
 
-        importDefaults(defaults: Object): jsPlumbInstance;
+        getScope(Element: Element | string): string
 
-        isHoverSuspended(): boolean;
+        getSelector(context?: Element | Selector, spec?: string): void
 
-        isSource(el: string | Element | Selector): boolean;
+        getSourceScope(element: Element | string): string
+        
+        getTargetScope(element: Element | string): string
 
-        isSourceEnabled(el: string | Element | Selector, connectionType?: string): boolean;
+        getType(id: string, typeDescriptor: string): Object
 
-        isSuspendDrawing(): boolean;
+        getZoom(): number
 
-        isSuspendEvents(): boolean;
+        hide(el: string | Element | Selector, changeEndpoints?: boolean/* =false */): jsPlumbInstance
 
-        isTarget(el: string | Element | Selector): boolean;
+        importDefaults(defaults: Object): jsPlumbInstance
 
-        isTargetEnabled(el: string | Element | Selector): boolean;
+        isHoverSuspended(): boolean
 
-        makeSource(el: string | Element | Selector, params: Object, endpoint?: string | Array<any>, parent?: string | Element, scope?: string, dragOptions?: Object, deleteEndpointsOnEmpty?: boolean/* =false */, filter?: Function): void;
+        isSource(el: string | Element | Selector): boolean
 
-        makeTarget(el: string | Element | Selector, params: Object, endpoint?: string | Array<any>, scope?: string, dropOptions?: Object, deleteEndpointsOnEmpty?: boolean/* =true */, maxConnections?: number/* =-1 */, onMaxConnections?: Function): void;
+        isSourceEnabled(el: string | Element | Selector, connectionType?: string): boolean
 
-        off(el: Element | Element | string, event: string, fn: Function): jsPlumbInstance;
+        isSuspendDrawing(): boolean
 
-        on(el: Element | Element | string, children?: string, event?: string, fn?: Function): jsPlumbInstance;
+        isSuspendEvents(): boolean
+
+        isTarget(el: string | Element | Selector): boolean
+
+        isTargetEnabled(el: string | Element | Selector): boolean
+
+        makeSource(el: string | Element | Selector, params: Object, endpoint?: string | Array<any>, parent?: string | Element, scope?: string, dragOptions?: Object, deleteEndpointsOnEmpty?: boolean/* =false */, filter?: Function): void
+
+        makeTarget(el: string | Element | Selector, params: Object, endpoint?: string | Array<any>, scope?: string, dropOptions?: Object, deleteEndpointsOnEmpty?: boolean/* =true */, maxConnections?: number/* =-1 */, onMaxConnections?: Function): void
+
+        off(el: Element | Element | string, event: string, fn: Function): jsPlumbInstance
+
+        on(el: Element | Element | string, children?: string, event?: string, fn?: Function): jsPlumbInstance
 
         ready(fn: Function): void;
 
         recalculateOffsets(el: string | Element | Selector): void;
 
-        registerConnectionType(typeId: string, type: Object): void;
+        refreshAllGroups(): void
 
-        registerConnectionTypes(types: Object): void;
+        registerConnectionType(typeId: string, type: Object): void
 
-        registerEndpointType(typeId: string, type: Object): void;
+        registerConnectionTypes(types: Object): void
 
-        registerEndpointTypes(types: Object): void;
+        registerEndpointType(typeId: string, type: Object): void
 
-        remove(el: string | Element | Selector): void;
+        registerEndpointTypes(types: Object): void
 
-        removeAllEndpoints(el: string | Element | Selector, recurse?: boolean/* =false */): jsPlumbInstance;
+        remove(el: string | Element | Selector): void
 
-        repaint(el: string | Element | Selector): jsPlumbInstance;
+        removeAllEndpoints(el: string | Element | Selector, recurse?: boolean/* =false */): jsPlumbInstance
 
-        repaintEverything(clearEdits?: boolean/* =false */): jsPlumbInstance;
+        removeAllGroups(deleteMembers: string, manipulateDOM?: boolean, doNotFireEvent?: boolean):void
 
-        reset(doNotUnbindInstanceEventListeners?: boolean): void;
+        removeGroup(group: Group|string, deleteMembers: string, manipulateDOM?: boolean, doNotFireEvent?: boolean):OrphanedPositions|void
+        
+        removeFromGroup(group: Group|string, el: ElementRef, doNotFireEvent?: boolean): void
 
-        restoreDefaults(): jsPlumbInstance;
+        repaint(el: string | Element | Selector): jsPlumbInstance
 
-        revalidate(el: string | Element | Selector): void;
+        repaintEverything(clearEdits?: boolean/* =false */): jsPlumbInstance
 
-        select(params?: Object, scope?: string | string, source?: string | string, target?: string | string, connections?: Connection[]): { each(fn: (conn: Connection) => void): void };
+        repaintGroup(group: Group|string): void
 
-        getHoverPaintStyle(params?: Object, scope?: string | string/* =jsPlumb.DefaultScope */, source?: string | Element | Selector | Array<any>, target?: string | Element | Selector | Array<any>, element?: string | Element | Selector | Array<any>): Selection;
+        reset(doNotUnbindInstanceEventListeners?: boolean): void
 
-        setContainer(el: string | Element | Selector): void;
+        restoreDefaults(): jsPlumbInstance
 
-        setHover(container: string | Element | Selector): void;
+        revalidate(el: string | Element): RedrawResult
 
-        setDefaultScope(scope: string): jsPlumbInstance;
+        /**
+         * Rotates the element with the given id by the given amount in degrees. This method sets two properties on the element's style: `transform:rotate(<amount>deg)` and `transform-origin:center center`.
+         * Transform origins other than `center center` are not supported. To reset the rotation for some element, call `rotate(elId, 0)`.
+         * @param elId
+         * @param amountInDegrees
+         * @param doNotRedraw
+         * @returns a RedrawResult, which is empty if no redraw was requested (or an element with the given id is not being managed)
+         */
+        rotate(elId:string, amountInDegrees:number, doNotRedraw?:boolean):RedrawResult
 
-        setDraggable(el: string | Object | Array<any>, draggable: boolean): void;
+        select(params?: Object, scope?: string | string, source?: string | string, target?: string | string, connections?: Array<Connection>): { each(fn: (conn: Connection) => void): void }
 
-        setHoverSuspended(hover: boolean): void;
+        getHoverPaintStyle(params?: Object, scope?: string | string/* =jsPlumb.DefaultScope */, source?: string | Element | Selector | Array<any>, target?: string | Element | Selector | Array<any>, element?: string | Element | Selector | Array<any>): Selection
 
-        setIdChanged(oldId: string, newId: string): void;
+        setContainer(el: string | Element | Selector): void
 
-        setParent(el: Selector | Element, newParent: Selector | Element | string): void;
+        setHover(container: string | Element | Selector): void
 
-        setScope(el: Element | string, scope: string): void;
+        setDefaultScope(scope: string): jsPlumbInstance
 
-        setSource(connection: Connection, source: string | Element | Endpoint, doNotRepaint?: boolean/* =false */): jsPlumbInstance;
+        setDraggable(el: string | Object | Array<any>, draggable: boolean): void
 
-        setSourceEnabled(el: string | Element | Selector, state: boolean): jsPlumbInstance;
+        setHoverSuspended(hover: boolean): void
 
-        setSourceScope(el: Element | string, scope: string, connectionType?: string): void;
+        setIdChanged(oldId: string, newId: string): void
 
-        setSuspendDrawing(val: boolean, repaintAfterwards?: boolean/* =false */): boolean;
+        setParent(el: Selector | Element, newParent: Selector | Element | string): void
 
-        setSuspendEvents(val: boolean): void;
+        setScope(el: Element | string, scope: string): void
 
-        setTarget(connection: Connection, target: string | Element | Endpoint, doNotRepaint?: boolean/* =false */): jsPlumbInstance;
+        setSource(connection: Connection, source: string | Element | Endpoint, doNotRepaint?: boolean/* =false */): jsPlumbInstance
 
-        setTargetEnabled(el: string | Element | Selector, state: boolean): jsPlumbInstance;
+        setSourceEnabled(el: string | Element | Selector, state: boolean): jsPlumbInstance
 
-        setTargetScope(el: Element | string, scope: string, connectionType?: string): void;
+        setSourceScope(el: Element | string, scope: string, connectionType?: string): void
 
-        setZoom(val: number, repaintEverything?: boolean/* =false */): boolean;
+        setSuspendDrawing(val: boolean, repaintAfterwards?: boolean/* =false */): boolean
 
-        show(el: string | Element | Selector, changeEndpoints?: boolean/* =false */): jsPlumbInstance;
+        setSuspendEvents(val: boolean): void
 
-        toggleDraggable(el: string | Element | Selector): boolean;
+        setTarget(connection: Connection, target: string | Element | Endpoint, doNotRepaint?: boolean/* =false */): jsPlumbInstance
 
-        toggleSourceEnabled(el: string | Element | Selector): boolean;
+        setTargetEnabled(el: string | Element | Selector, state: boolean): jsPlumbInstance
 
-        toggleTargetEnabled(el: string | Element | Selector): boolean;
+        setTargetScope(el: Element | string, scope: string, connectionType?: string): void
 
-        toggleVisible(el: string | Element | Selector, changeEndpoints?: boolean/* =false */): void;
+        setZoom(val: number, repaintEverything?: boolean/* =false */): boolean
 
-        unbind(eventOrListener?: string | Function, listener?: Function): void;
+        show(el: string | Element | Selector, changeEndpoints?: boolean/* =false */): jsPlumbInstance
 
-        unmakeEverySource(): jsPlumbInstance;
+        toggleDraggable(el: string | Element | Selector): boolean
 
-        unmakeEveryTarget(): jsPlumbInstance;
+        toggleSourceEnabled(el: string | Element | Selector): boolean
 
-        unmakeSource(el: string | Element | Selector): jsPlumbInstance;
+        toggleTargetEnabled(el: string | Element | Selector): boolean
 
-        unmakeTarget(el: string | Element | Selector): jsPlumbInstance;
+        toggleVisible(el: string | Element | Selector, changeEndpoints?: boolean/* =false */): void
+
+        unbind(eventOrListener?: string | Function, listener?: Function): void
+
+        unmakeEverySource(): jsPlumbInstance
+
+        unmakeEveryTarget(): jsPlumbInstance
+
+        unmakeSource(el: string | Element | Selector): jsPlumbInstance
+
+        unmakeTarget(el: string | Element | Selector): jsPlumbInstance
     }
 
     interface ConnectionMadeEventInfo {
-        connection: Connection;
-        source: HTMLDivElement;
-        sourceEndpoint: Endpoint;
-        sourceId: string;
-        target: HTMLDivElement;
-        targetEndpoint: Endpoint;
-        targetId: string;
+        connection: Connection
+        source: HTMLDivElement
+        sourceEndpoint: Endpoint
+        sourceId: string
+        target: HTMLDivElement
+        targetEndpoint: Endpoint
+        targetId: string
     }
 
     interface OnConnectionBindInfo {
-        connection: Connection;// the new Connection.you can register listeners on this etc.
-        sourceId: string;// - id of the source element in the Connection
-        originalSourceId: string;
-        newSourceId: string;
-        targetId: string;// - id of the target element in the Connection
-        originalTargetId: string;
-        newTargetId: string;
-        source: Element;// - the source element in the Connection
-        target: Element;//- the target element in the Connection
-        sourceEndpoint: Endpoint;//- the source Endpoint in the Connection
-        newSourceEndpoint: Endpoint;
-        targetEndpoint: Endpoint;//- the targetEndpoint in the Connection
-        newTargetEndpoint: Endpoint;
+        connection: Connection// the new Connection.you can register listeners on this etc.
+        sourceId: string// - id of the source element in the Connection
+        originalSourceId: string
+        newSourceId: string
+        targetId: string// - id of the target element in the Connection
+        originalTargetId: string
+        newTargetId: string
+        source: Element// - the source element in the Connection
+        target: Element//- the target element in the Connection
+        sourceEndpoint: Endpoint//- the source Endpoint in the Connection
+        newSourceEndpoint: Endpoint
+        targetEndpoint: Endpoint//- the targetEndpoint in the Connection
+        newTargetEndpoint: Endpoint
     }
 
     interface Defaults {
-        Endpoint?: EndpointSpec;
-        Endpoints?: [ EndpointSpec, EndpointSpec ];
-        Anchor?: AnchorSpec;
-        Anchors?: [ AnchorSpec, AnchorSpec ];
-        PaintStyle?: PaintStyle;
-        HoverPaintStyle?: PaintStyle;
-        EndpointStyle?: PaintStyle;
-        EndpointHoverStyle?: PaintStyle;
-        ConnectionsDetachable?: boolean;
-        ReattachConnections?: boolean;
-        ConnectionOverlays?: Array<OverlaySpec>;
-        Container?: any; // string(selector or id) or element
-        DragOptions?: DragOptions;
-        Connector?:ConnectorSpec;
+        Endpoint?: EndpointSpec
+        Endpoints?: [ EndpointSpec, EndpointSpec ]
+        Anchor?: AnchorSpec
+        Anchors?: [ AnchorSpec, AnchorSpec ]
+        PaintStyle?: PaintStyle
+        HoverPaintStyle?: PaintStyle
+        EndpointStyle?: PaintStyle
+        EndpointHoverStyle?: PaintStyle
+        ConnectionsDetachable?: boolean
+        ReattachConnections?: boolean
+        ConnectionOverlays?: Array<OverlaySpec>
+        Container?: any // string(selector or id) or element
+        DragOptions?: DragOptions
+        Connector?:ConnectorSpec
     }
 
     interface Connections {
-        detach(): void;
-        length: number;
-        each(e: (c: Connection) => void): void;
+        detach(): void
+        length: number
+        each(e: (c: Connection) => void): void
     }
 
     interface ConnectParams {
-        uuids?: [UUID, UUID];
-        source?: ElementRef | Endpoint;
-        target?: ElementRef | Endpoint;
-        detachable?: boolean;
-        deleteEndpointsOnDetach?: boolean;
-        endpoint?: EndpointSpec;
-        anchor?: AnchorSpec;
-        anchors?: [AnchorSpec, AnchorSpec];
-        label?: string;
-        connector?: ConnectorSpec;
-        overlays?:Array<OverlaySpec>;
+        uuids?: [UUID, UUID]
+        source?: ElementRef | Endpoint
+        target?: ElementRef | Endpoint
+        detachable?: boolean
+        deleteEndpointsOnDetach?: boolean
+        endpoint?: EndpointSpec
+        anchor?: AnchorSpec
+        anchors?: [AnchorSpec, AnchorSpec]
+        label?: string
+        connector?: ConnectorSpec
+        overlays?:Array<OverlaySpec>
         cssClass?: string
+        parameters?: Record<string, any>
     }
 
     interface DragEventCallbackOptions {
-        drag: object; // The associated Drag instance
-        e: MouseEvent;
-        el: HTMLElement; // element being dragged
-        pos: [number, number]; // x,y location of the element. drag event only.
+        drag: object // The associated Drag instance
+        e: MouseEvent
+        el: HTMLElement // element being dragged
+        pos: [number, number] // x,y location of the element. drag event only.
     }
 
     interface DragOptions {
-        containment?: string;
-        start?: (params:DragEventCallbackOptions) => void;
-        drag?: (params:DragEventCallbackOptions) => void;
-        stop?: (params:DragEventCallbackOptions) => void;
-        cursor?: string;
-        zIndex?: number;
+        containment?: string
+        start?: (params:DragEventCallbackOptions) => void
+        drag?: (params:DragEventCallbackOptions) => void
+        stop?: (params:DragEventCallbackOptions) => void
+        cursor?: string
+        zIndex?: number
     }
 
     interface DropOptions {
-        hoverClass: string;
+        hoverClass: string
     }
 
-    interface Connection {
-        id: ConnectionId;
-        setDetachable(detachable: boolean): void;
-        setParameter(name: string, value: any): void;
-        endpoints: [Endpoint, Endpoint];
-        getLabelOverlay(): Overlay;
-        getOverlays(): Object;
-        getOverlay(s: string): Overlay;
-        showOverlay(s: string): void;
-        hideOverlay(s: string): void;
-        setLabel(s: string): void;
-        getElement(): Connection;
-        repaint():void;
-        source: Element;
-        target: Element;
-        sourceId: string;
-        targetId: string;
+    interface UIComponent {
+        getParameter:(name:string) => any
+        setParameter:(name: string, value: any) => void
+        getParameters:() => Record<string, any>
+        setParameters:(parameters:Record<string, any>) => void
+    }
+
+    interface Connection extends UIComponent {
+        readonly id: ConnectionId
+        setDetachable(detachable: boolean): void
+        readonly endpoints: [Endpoint, Endpoint]
+        getLabelOverlay(): Overlay
+        getOverlays(): Object
+        getOverlay(id: string): Overlay
+        showOverlay(id: string): void
+        hideOverlay(id: string): void
+        removeOverlay(id: string): void
+        addOverlay(spec: OverlaySpec): Overlay
+        setLabel(s: string): void
+        getElement(): Connection
+        repaint():void
+        readonly source: Element
+        readonly target: Element
+        readonly sourceId: string
+        readonly targetId: string
     }
 
 
     /* -------------------------------------------- CONNECTORS ---------------------------------------------------- */
 
-    interface ConnectorOptions {
-    }
-    type UserDefinedConnectorId = string;
-    type ConnectorId = "Bezier" | "StateMachine" | "Flowchart" | "Straight" | UserDefinedConnectorId;
-    type ConnectorSpec = ConnectorId | [ConnectorId, ConnectorOptions];
+    interface ConnectorOptions { }
+    type UserDefinedConnectorId = string
+    type ConnectorId = "Bezier" | "StateMachine" | "Flowchart" | "Straight" | UserDefinedConnectorId
+    type ConnectorSpec = ConnectorId | [ConnectorId, ConnectorOptions]
 
+
+    /* -------------------------------------------- Group ---------------------------------------------------- */
+
+    interface Group {
+        id: string
+        connections: GroupConnections
+        collapsed: boolean
+        add(el: ElementRef, doNotFireEvent?: boolean): void
+        getEl(): ElementRef
+        getDragArea(): ElementRef
+        getAnchor(): AnchorSpec
+        getEndpoint(): EndpointSpec 
+        overrideDrop(el?: ElementRef, targetGroup?: Group): boolean
+        remove(el: ElementRef, manipulateDOM?: boolean, doNotFireEvent?: boolean, doNotUpdateConnections?: boolean, targetGroup?: Group): void
+        removeAll(manipulateDOM?: boolean, doNotFireEvent?: boolean): void
+        orphanAll(): OrphanedPositions
+        getMembers(): Array<ElementRef>
+    }
+
+    interface GroupOptions {
+        el: ElementRef
+        id?: string
+        anchor?: AnchorSpec
+        constrain?: boolean
+        collapsed?: boolean
+        draggable?: boolean
+        dragOptions?: DragOptions
+        droppable?: boolean
+        dropOverride?: boolean
+        endpoint?: EndpointSpec
+        ghost?: boolean
+        orphan?: boolean
+        prune?: boolean
+        proxied?: boolean
+        revert?: boolean
+    }
+
+    type Position = {left: number, top: number}
+
+    type OrphanedPositions = Record<string, Position>
+
+    type GroupConnections = {source: Array<Connection>, target: Array<Connection>, internal: Array<Connection>}
 
     /* -------------------------------------------- ENDPOINTS ------------------------------------------------------ */
 
@@ -339,72 +428,73 @@ declare module jsPlumb {
                         [ EndpointRectangle, EndpointRectangleOptions ] |
                         [ EndpointDot, EndpointDotOptions ] |
                         [ EndpointBlank, EndpointBlankOptions ]
-    ;
+    
 
-    type EndpointId = EndpointRectangle | EndpointDot | EndpointBlank;
-    type EndpointRectangle = "Rectangle";
-    type EndpointDot = "Dot";
-    type EndpointBlank = "Blank";
+    type EndpointId = EndpointRectangle | EndpointDot | EndpointBlank
+    type EndpointRectangle = "Rectangle"
+    type EndpointDot = "Dot"
+    type EndpointBlank = "Blank"
 
-    type EndpointDotOptions = { radius?: number, cssClass?: string, hoverClass?: string };
-    type EndpointRectangleOptions = { width?: number, height?: number, cssClass?: string, hoverClass?: string};
-    type EndpointImageOptions = { src: string, cssClass?: string, hoverClass?: string };
-    type EndpointBlankOptions = {};
+    type EndpointDotOptions = { radius?: number, cssClass?: string, hoverClass?: string }
+    type EndpointRectangleOptions = { width?: number, height?: number, cssClass?: string, hoverClass?: string}
+    type EndpointImageOptions = { src: string, cssClass?: string, hoverClass?: string }
+    type EndpointBlankOptions = {}
 
 
     interface EndpointOptions {
-        anchor?: AnchorSpec;
-        endpoint?: EndpointSpec;
-        enabled?: boolean;//= true
-        paintStyle?: PaintStyle;
-        hoverPaintStyle?: PaintStyle;
-        cssClass?: string;
-        hoverClass?: string;
-        maxConnections: number;//= 1?
-        dragOptions?: DragOptions;
-        dropOptions?: DropOptions;
-        connectorStyle?: PaintStyle;
-        connectorHoverStyle?: PaintStyle;
-        connector?: ConnectorSpec;
-        connectorOverlays?: Array<OverlaySpec>;
-        connectorClass?: string;
-        connectorHoverClass?: string;
-        connectionsDetachable?: boolean;//= true
-        isSource?: boolean;//= false
-        isTarget?: boolean;//= false
-        reattach?: boolean;//= false
-        parameters?: object;
-        "connector-pointer-events"?: string;
-        connectionType?: string;
-        dragProxy?: string | Array<string>;
-        id?: string;
-        scope?: string;
-        reattachConnections?: boolean;
-        type?: string; // "Dot", etc.
-        overlays?:Array<OverlaySpec>;
+        anchor?: AnchorSpec
+        endpoint?: EndpointSpec
+        enabled?: boolean//= true
+        paintStyle?: PaintStyle
+        hoverPaintStyle?: PaintStyle
+        cssClass?: string
+        hoverClass?: string
+        maxConnections: number//= 1?
+        dragOptions?: DragOptions
+        dropOptions?: DropOptions
+        connectorStyle?: PaintStyle
+        connectorHoverStyle?: PaintStyle
+        connector?: ConnectorSpec
+        connectorOverlays?: Array<OverlaySpec>
+        connectorClass?: string
+        connectorHoverClass?: string
+        connectionsDetachable?: boolean//= true
+        isSource?: boolean//= false
+        isTarget?: boolean//= false
+        reattach?: boolean//= false
+        parameters?: Record<string, any>
+        "connector-pointer-events"?: string
+        connectionType?: string
+        dragProxy?: string | Array<string>
+        id?: string
+        scope?: string
+        reattachConnections?: boolean
+        type?: string // "Dot", etc.
+        overlays?:Array<OverlaySpec>
+        uuid?:string
     }
 
-    class Endpoint {
-        anchor: Anchor;
-        connections?: Array<Connection>;
-        maxConnections: number;//= 1?
-        id: string;
-        scope: string;
-        type: EndpointId;
+    interface Endpoint extends UIComponent {
+        anchor: Anchor
+        connections?: Array<Connection>
+        maxConnections: number//= 1?
+        id: string
+        scope: string
+        type: EndpointId
 
-        setEndpoint(spec: EndpointSpec): void;
+        setEndpoint(spec: EndpointSpec): void
 
-        connectorSelector(): Connection;
+        connectorSelector(): Connection
 
-        isEnabled(): boolean;
+        isEnabled(): boolean
 
-        setEnabled(enabled: boolean): void;
+        setEnabled(enabled: boolean): void
 
-        setHover(hover: boolean): void;
+        setHover(hover: boolean): void
 
-        getElement(): Element;
+        getElement(): Element
 
-        setElement(el: Element): void;
+        setElement(el: Element): void
     }
 
     /**
@@ -415,18 +505,18 @@ declare module jsPlumb {
 
     /* -------------------------------------------- ANCHORS -------------------------------------------------------- */
 
-    type AnchorOrientationHint = -1 | 0 | 1;
+    type AnchorOrientationHint = -1 | 0 | 1
 
     interface Anchor {
-        type: AnchorId;
-        cssClass: string;
-        elementId: string;
-        id: string;
-        locked: boolean;
-        offsets: [number, number];
-        orientation: [AnchorOrientationHint, AnchorOrientationHint];
-        x: number;
-        y: number;
+        type: AnchorId
+        cssClass: string
+        elementId: string
+        id: string
+        locked: boolean
+        offsets: [number, number]
+        orientation: [AnchorOrientationHint, AnchorOrientationHint]
+        x: number
+        y: number
     }
 
     type AnchorDynamicSpec = Array<
@@ -434,18 +524,18 @@ declare module jsPlumb {
          AnchorDynamicId |
          AnchorPerimeterSpec |
          AnchorContinuousSpec
-    >;
+    >
 
-    type AnchorDynamicId = "AutoDefault";
+    type AnchorDynamicId = "AutoDefault"
 
     type AnchorId =
         AnchorStaticId |
         AnchorDynamicId |
         AnchorPerimeterId |
         AnchorContinuousId
-    ;
+    
 
-    type AnchorStaticSpec = AnchorStaticId | AnchorArraySpec;
+    type AnchorStaticSpec = AnchorStaticId | AnchorArraySpec
 
     type AnchorStaticId =
         "Assign" |
@@ -462,13 +552,13 @@ declare module jsPlumb {
         "TopCenter" |
         "TopLeft" |
         "TopRight"
-    ;
+    
 
-    type AnchorArraySpec = [ number, number, number, number, number?, number?, string? ];
+    type AnchorArraySpec = [ number, number, number, number, number?, number?, string? ]
 
     type AnchorPerimeterSpec = AnchorPerimeterId | [ AnchorPerimeterId, { shape?: PerimeterShape, anchorCount?: number, rotation?: number } ]
 
-    type AnchorPerimeterId = "Perimeter";
+    type AnchorPerimeterId = "Perimeter"
 
     type PerimeterShape =
         "Circle" |
@@ -477,7 +567,7 @@ declare module jsPlumb {
         "Diamond" |
         "Rectangle" |
         "Square"
-    ;
+    
 
     type AnchorContinuousSpec = AnchorContinuousId | [ AnchorContinuousId, { faces?: [ ContinuousAnchorFace ] } ]
 
@@ -487,48 +577,52 @@ declare module jsPlumb {
         "ContinuousLeft" |
         "ContinuousRight" |
         "ContinuousTop"
-    ;
+    
 
-    type ContinuousAnchorFace = "top" | "left" | "right" | "bottom";
+    type ContinuousAnchorFace = "top" | "left" | "right" | "bottom"
 
     type AnchorSpec =
          AnchorStaticSpec |
          AnchorDynamicSpec |
          AnchorPerimeterSpec |
          AnchorContinuousSpec
-    ;
+    
+
+    interface RedrawResult {
+        c:Array<Connection>
+        e:Array<Endpoint>
+    }
 
     /* --------------------------------------- OVERLAYS ------------------------------------------------------------- */
 
-    interface OverlayOptions {
-    }
+    interface OverlayOptions { }
 
     interface ArrowOverlayOptions extends OverlayOptions {
-        width?: number; // 20
-        length?: number; // 20
-        location?: number; // 0.5
-        direction?: number; // 1
-        foldback?: number; // 0.623
-        paintStyle?: PaintStyle;
+        width?: number // 20
+        length?: number // 20
+        location?: number // 0.5
+        direction?: number // 1
+        foldback?: number // 0.623
+        paintStyle?: PaintStyle
     }
 
     interface LabelOverlayOptions extends OverlayOptions {
-        label: string;
-        cssClass?: string;
-        location?: number; // 0.5
+        label: string
+        cssClass?: string
+        location?: number // 0.5
         labelStyle?: {
-            font?: string;
-            color?: string;
-            fill?: string;
-            borderStyle?: string;
-            borderWidth?: number;// integer
-            padding?: number; //integer
-        };
+            font?: string
+            color?: string
+            fill?: string
+            borderStyle?: string
+            borderWidth?: number// integer
+            padding?: number //integer
+        }
     }
 
-    type OverlayId = "Label" | "Arrow" | "PlainArrow" | "Custom";
+    type OverlayId = "Label" | "Arrow" | "PlainArrow" | "Custom"
 
-    type OverlaySpec = OverlayId | [OverlayId, OverlayOptions];
+    type OverlaySpec = OverlayId | [OverlayId, OverlayOptions]
 
     interface Overlay { }
 }

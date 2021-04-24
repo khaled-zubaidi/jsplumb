@@ -1,7 +1,7 @@
 /*
  * This file contains the code for Connections.
  *
- * Copyright (c) 2010 - 2018 jsPlumb (hello@jsplumbtoolkit.com)
+ * Copyright (c) 2010 - 2020 jsPlumb (hello@jsplumbtoolkit.com)
  *
  * https://jsplumbtoolkit.com
  * https://github.com/jsplumb/jsplumb
@@ -194,12 +194,13 @@
                 otherInfo = _jsPlumb.getCachedData(this.targetId),
                 otherOffset = otherInfo.o,
                 otherWH = otherInfo.s,
-                initialTimestamp = _suspendedAt || _jsPlumb.timestamp(),
+                initialTimestamp = _suspendedAt || jsPlumbUtil.uuid(),
                 anchorLoc = this.endpoints[0].anchor.compute({
                     xy: [ myOffset.left, myOffset.top ], wh: myWH, element: this.endpoints[0],
                     elementId: this.endpoints[0].elementId,
                     txy: [ otherOffset.left, otherOffset.top ], twh: otherWH, tElement: this.endpoints[1],
-                    timestamp: initialTimestamp
+                    timestamp: initialTimestamp,
+                    rotation:_jsPlumb.getRotation(this.endpoints[0].elementId)
                 });
 
             this.endpoints[0].paint({ anchorLoc: anchorLoc, timestamp: initialTimestamp });
@@ -208,7 +209,8 @@
                 xy: [ otherOffset.left, otherOffset.top ], wh: otherWH, element: this.endpoints[1],
                 elementId: this.endpoints[1].elementId,
                 txy: [ myOffset.left, myOffset.top ], twh: myWH, tElement: this.endpoints[0],
-                timestamp: initialTimestamp
+                timestamp: initialTimestamp,
+                rotation:_jsPlumb.getRotation(this.endpoints[1].elementId)
             });
             this.endpoints[1].paint({ anchorLoc: anchorLoc, timestamp: initialTimestamp });
         }
@@ -505,8 +507,21 @@
                         targetInfo = this._jsPlumb.instance.updateOffset({elId:tId}).o,
                         sE = this.endpoints[sIdx], tE = this.endpoints[tIdx];
 
-                    var sAnchorP = sE.anchor.getCurrentLocation({xy: [sourceInfo.left, sourceInfo.top], wh: [sourceInfo.width, sourceInfo.height], element: sE, timestamp: timestamp}),
-                        tAnchorP = tE.anchor.getCurrentLocation({xy: [targetInfo.left, targetInfo.top], wh: [targetInfo.width, targetInfo.height], element: tE, timestamp: timestamp});
+                    var sAnchorP = sE.anchor.getCurrentLocation(
+                        {
+                            xy: [sourceInfo.left, sourceInfo.top],
+                            wh: [sourceInfo.width, sourceInfo.height],
+                            element: sE,
+                            timestamp: timestamp,
+                            rotation:this._jsPlumb.instance.getRotation(this.sourceId)
+                        }),
+                        tAnchorP = tE.anchor.getCurrentLocation({
+                            xy: [targetInfo.left, targetInfo.top],
+                            wh: [targetInfo.width, targetInfo.height],
+                            element: tE,
+                            timestamp: timestamp,
+                            rotation:this._jsPlumb.instance.getRotation(this.targetId)
+                        });
 
                     this.connector.resetBounds();
 
@@ -647,7 +662,7 @@
             this._jsPlumb.instance.deleteObject({endpoint:current, deleteAttachedObjects:false});
             this._jsPlumb.instance.fire("endpointReplaced", {previous:current, current:_new});
 
-            this._jsPlumb.instance.anchorManager.updateOtherEndpoint(this.endpoints[0].elementId, this.endpoints[1].elementId, this.endpoints[1].elementId, this);
+            this._jsPlumb.instance.router.sourceOrTargetChanged(this.endpoints[1].elementId, this.endpoints[1].elementId, this, this.endpoints[1].element, 1);
 
         }
 

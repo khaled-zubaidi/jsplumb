@@ -1,7 +1,7 @@
 /*
  * This file contains the code for Endpoints.
  *
- * Copyright (c) 2010 - 2018 jsPlumb (hello@jsplumbtoolkit.com)
+ * Copyright (c) 2010 - 2020 jsPlumb (hello@jsplumbtoolkit.com)
  * 
  * https://jsplumbtoolkit.com
  * https://github.com/jsplumb/jsplumb
@@ -57,9 +57,6 @@
     // create a floating endpoint (for drag connections)
     var _makeFloatingEndpoint = function (paintStyle, referenceAnchor, endpoint, referenceCanvas, sourceElement, _jsPlumb, _newEndpoint, scope) {
         var floatingAnchor = new _jp.FloatingAnchor({ reference: referenceAnchor, referenceCanvas: referenceCanvas, jsPlumbInstance: _jsPlumb });
-        //setting the scope here should not be the way to fix that mootools issue.  it should be fixed by not
-        // adding the floating endpoint as a droppable.  that makes more sense anyway!
-        // TRANSIENT MANAGE
         return _newEndpoint({
             paintStyle: paintStyle,
             endpoint: endpoint,
@@ -197,7 +194,7 @@
 
         // ANCHOR MANAGER
         if (!params._transient) { // in place copies, for example, are transient.  they will never need to be retrieved during a paint cycle, because they dont move, and then they are deleted.
-            this._jsPlumb.instance.anchorManager.add(this, this.elementId);
+            this._jsPlumb.instance.router.addEndpoint(this, this.elementId);
         }
 
         this.prepareEndpoint = function(ep, typeId) {
@@ -349,7 +346,7 @@
             }.bind(this));
             this.element = _jp.getElement(el);
             this.elementId = _jsPlumb.getId(this.element);
-            _jsPlumb.anchorManager.rehomeEndpoint(this, curId, this.element);
+            _jsPlumb.router.rehomeEndpoint(this, curId, this.element);
             _jsPlumb.dragManager.endpointAdded(this.element);
             _ju.addToList(params.endpointsByElement, parentId, this);
             return this;
@@ -425,9 +422,11 @@
                             anchorParams.txy = [ oOffset.left, oOffset.top ];
                             anchorParams.twh = oWH;
                             anchorParams.tElement = c.endpoints[oIdx];
+                            anchorParams.tRotation = _jsPlumb.getRotation(oId);
                         } else if (this.connections.length > 0) {
                             anchorParams.connection = this.connections[0];
                         }
+                        anchorParams.rotation = _jsPlumb.getRotation(this.elementId);
                         ap = this.anchor.compute(anchorParams);
                     }
 
@@ -628,7 +627,7 @@
                         // becomes established, the anchor manager is informed that the target of the connection has
                         // changed.
 
-                        _jsPlumb.anchorManager.newConnection(jpc);
+                        _jsPlumb.router.newConnection(jpc);
 
                     } else {
                         existingJpc = true;
@@ -648,14 +647,11 @@
                         // now we replace ourselves with the temporary div we created above:
                         if (anchorIdx === 0) {
                             existingJpcParams = [ jpc.source, jpc.sourceId, canvasElement, dragScope ];
-                            _jsPlumb.anchorManager.sourceChanged(jpc.endpoints[anchorIdx].elementId, placeholderInfo.id, jpc, placeholderInfo.element);
+                            _jsPlumb.router.sourceOrTargetChanged(jpc.endpoints[anchorIdx].elementId, placeholderInfo.id, jpc, placeholderInfo.element, 0);
 
                         } else {
                             existingJpcParams = [ jpc.target, jpc.targetId, canvasElement, dragScope ];
-                            jpc.target = placeholderInfo.element;
-                            jpc.targetId = placeholderInfo.id;
-
-                            _jsPlumb.anchorManager.updateOtherEndpoint(jpc.sourceId, jpc.endpoints[anchorIdx].elementId, jpc.targetId, jpc);
+                            _jsPlumb.router.sourceOrTargetChanged(jpc.endpoints[anchorIdx].elementId, placeholderInfo.id, jpc, placeholderInfo.element, 1);
                         }
 
                         // store the original endpoint and assign the new floating endpoint for the drag.
@@ -676,14 +672,6 @@
 
                     _jsPlumb.registerFloatingConnection(placeholderInfo, jpc, this._jsPlumb.floatingEndpoint);
 
-                    // // register it and register connection on it.
-                    // _jsPlumb.floatingConnections[placeholderInfo.id] = jpc;
-                    //
-                    // // only register for the target endpoint; we will not be dragging the source at any time
-                    // // before this connection is either discarded or made into a permanent connection.
-                    // _ju.addToList(params.endpointsByElement, placeholderInfo.id, this._jsPlumb.floatingEndpoint);
-
-
                     // tell jsplumb about it
                     _jsPlumb.currentlyDragging = true;
                 }.bind(this);
@@ -696,10 +684,8 @@
                         var originalEvent = _jsPlumb.getDropEvent(arguments);
                         // unlock the other endpoint (if it is dynamic, it would have been locked at drag start)
                         var idx = _jsPlumb.getFloatingAnchorIndex(jpc);
-                        jpc.endpoints[idx === 0 ? 1 : 0].anchor.unlock();
-                        // TODO: Dont want to know about css classes inside jsplumb, ideally.
+                        jpc.endpoints[idx === 0 ? 1 : 0].anchor.locked = false;
                         jpc.removeClass(_jsPlumb.draggingClass);
-
                         // if we have the floating endpoint then the connection has not been dropped
                         // on another endpoint.  If it is a new connection we throw it away. If it is an
                         // existing connection we check to see if we should reattach it, throwing it away
@@ -744,10 +730,10 @@
                                     // in the code; it all refers to the connection itself. we could add a
                                     // `checkSanity(connection)` method to anchorManager that did this.
                                     if (idx === 1) {
-                                        _jsPlumb.anchorManager.updateOtherEndpoint(jpc.sourceId, jpc.floatingId, jpc.targetId, jpc);
+                                        _jsPlumb.router.sourceOrTargetChanged(jpc.floatingId, jpc.targetId, jpc, jpc.target, idx);
                                     }
                                     else {
-                                        _jsPlumb.anchorManager.sourceChanged(jpc.floatingId, jpc.sourceId, jpc, jpc.source);
+                                        _jsPlumb.router.sourceOrTargetChanged(jpc.floatingId, jpc.sourceId, jpc, jpc.source, idx);
                                     }
 
                                     _jsPlumb.repaint(existingJpcParams[1]);
@@ -796,7 +782,7 @@
                         // make our canvas visible (TODO: hand off to library; we should not know about DOM)
                         this.canvas.style.visibility = "visible";
                         // unlock our anchor
-                        this.anchor.unlock();
+                        this.anchor.locked = false;
                         // clear floating anchor.
                         this._jsPlumb.floatingEndpoint = null;
                     }
@@ -1203,10 +1189,10 @@
                     }
 
                     if (idx === 1) {
-                        _jsPlumb.anchorManager.updateOtherEndpoint(jpc.sourceId, jpc.floatingId, jpc.targetId, jpc);
+                        _jsPlumb.router.sourceOrTargetChanged(jpc.floatingId, jpc.targetId, jpc, jpc.target, 1);
                     }
                     else {
-                        _jsPlumb.anchorManager.sourceChanged(jpc.floatingId, jpc.sourceId, jpc, jpc.source);
+                        _jsPlumb.router.sourceOrTargetChanged(jpc.floatingId, jpc.sourceId, jpc, jpc.source, 0);
                     }
 
                     // when makeSource has uniqueEndpoint:true, we want to create connections with new endpoints
@@ -1251,10 +1237,10 @@
 
                         // TODO checkSanity
                         if (idx === 1) {
-                            _jsPlumb.anchorManager.updateOtherEndpoint(jpc.sourceId, jpc.floatingId, jpc.targetId, jpc);
+                            _jsPlumb.router.sourceOrTargetChanged(jpc.floatingId, jpc.targetId, jpc, jpc.target, 1);
                         }
                         else {
-                            _jsPlumb.anchorManager.sourceChanged(jpc.floatingId, jpc.sourceId, jpc, jpc.source);
+                            _jsPlumb.router.sourceOrTargetChanged(jpc.floatingId, jpc.sourceId, jpc, jpc.source, 0);
                         }
 
                         _jsPlumb.repaint(jpc.sourceId);

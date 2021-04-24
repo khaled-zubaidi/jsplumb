@@ -6525,5 +6525,6 @@ var testSuite = function (_jsPlumb) {
         equal("Dot", c.endpoints[1].endpoint.type, "endpoint 2 is now a Dot");
     });
 
+
 };
 
